@@ -6,6 +6,23 @@ set(EXEC_NAME start)
 
 set(CMAKE_CXX_STANDARD 14)
 
+## System dependencies are found with CMake's conventions
+## GStreamer 1.0 package required
+find_package(PkgConfig)
+
+macro(find_gstreamer_component prefix pkg lib)
+  pkg_check_modules(PC_${prefix} REQUIRED ${pkg})
+  find_library(${prefix}_LIBRARIES NAMES ${lib} HINTS ${PC_${prefix}_LIBRARY_DIRS} ${PC_${prefix}_LIBDIR})
+  list(APPEND gstreamer_INCLUDE_DIRS ${PC_${prefix}_INCLUDE_DIRS})
+  list(APPEND gstreamer_LIBRARIES ${${prefix}_LIBRARIES})
+  mark_as_advanced(${prefix}_LIBRARIES gstreamer_LIBRARIES gstreamer_INCLUDE_DIRS)
+endmacro()
+
+find_gstreamer_component(gst      gstreamer-1.0       gstreamer-1.0)
+find_gstreamer_component(gstbase  gstreamer-base-1.0  gstbase-1.0)
+find_gstreamer_component(gstapp   gstreamer-app-1.0   gstapp-1.0)
+#find_gstreamer_component(gstvideo gstreamer-video-1.0 gstvideo-1.0)
+
 if(DEFINED ENV{KINESIS_VIDEO_PIC_SRC})
     set(KINESIS_VIDEO_PIC_SRC $ENV{KINESIS_VIDEO_PIC_SRC})
 else()
@@ -35,8 +52,13 @@ if(DEFINED ENV{KINESIS_VIDEO_GST_DEMO_SRC})
 else()
     set(KINESIS_VIDEO_GST_DEMO_SRC "../kinesis-video-gst-demo")
 endif()
+if($ENV{JAVA_HOME})
+	set(JAVA_HOME $ENV{JAVA_HOME})
+else()
+	set(JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64/") #REMOVE ME AND DO IT PROPERLY!!!!
+endif()
 
-set(JAVA_HOME $ENV{JAVA_HOME})
+message(STATUS "Java home directorz is ${JAVA_HOME}")
 message(STATUS "System name is ${CMAKE_SYSTEM_NAME}")
 
 STRING(TOLOWER "${CMAKE_SYSTEM_NAME}" CMAKE_SYSTEM_NAME_LOWER_CASE)
@@ -274,8 +296,8 @@ add_executable(start ${TST_PRODUCER_SOURCE_FILES})
 add_executable(kinesis_video_gstreamer_sample_app ${GST_DEMO_APP})
 add_executable(kinesis_video_gstreamer_sample_rtsp_app ${RTSP_DEMO_APP})
 
-target_include_directories(kinesis_video_gstreamer_sample_app PRIVATE ${GST_INCLUDE_DIRS})
-target_include_directories(kinesis_video_gstreamer_sample_rtsp_app PRIVATE ${GST_INCLUDE_DIRS})
+target_include_directories(kinesis_video_gstreamer_sample_app PRIVATE ${GST_INCLUDE_DIRS} ${gstreamer_INCLUDE_DIRS})
+target_include_directories(kinesis_video_gstreamer_sample_rtsp_app PRIVATE ${GST_INCLUDE_DIRS} ${gstreamer_INCLUDE_DIRS} )
 
 target_link_libraries(KinesisVideoProducerJNI)
 
@@ -301,11 +323,10 @@ target_link_libraries(kinesis_video_gstreamer_sample_app
         glib-2.0)
 
 target_link_libraries(kinesis_video_gstreamer_sample_rtsp_app
-        producer 
-        pthread 
-        dl 
-        gstreamer-1.0 
-        gstapp-1.0 
-        gobject-2.0 
+        producer
+        pthread
+        dl
+        gstreamer-1.0
+        gstapp-1.0
+        gobject-2.0
         glib-2.0)
-
