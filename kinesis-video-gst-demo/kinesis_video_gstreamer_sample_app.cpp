@@ -409,25 +409,50 @@ int gstreamer_init(int argc, char* argv[]) {
     if (data.encoder) {
         data.source = gst_element_factory_make("autovideosrc", "source");
         vtenc = true;
+        g_printerr("vtenc_h264_hw encoder \n");
     } else {
         // Failed creating vtenc - check pi hardware encoder
         data.encoder = gst_element_factory_make("omxh264enc", "encoder");
         if (data.encoder) {
             isOnRpi = true;
+            g_printerr("we think we are on a rpi - isOnRpi = true;\n");
         } else {
             // - attempt x264enc
             data.encoder = gst_element_factory_make("x264enc", "encoder");
             isOnRpi = false;
+            g_printerr("x264enc encoder\n");
         }
         data.source = gst_element_factory_make("v4l2src", "source");
         vtenc = false;
+        g_printerr("v4l2src source\n");
     }
 
     /* create an empty pipeline */
     data.pipeline = gst_pipeline_new("test-pipeline");
 
     if (!data.pipeline || !data.source || !data.source_filter || !data.encoder || !data.filter || !data.appsink || !data.h264parse) {
-        g_printerr("Not all elements could be created.\n");
+        g_printerr("Not all elements could be created.\n ");
+        if (!data.pipeline) {
+          g_printerr("Pipeline could not be created.\n ");
+        }
+        if (!data.source) {
+          g_printerr("source could not be created.\n ");
+        }
+        if (!data.source_filter) {
+          g_printerr("source_filter could not be created.\n ");
+        }
+        if (!data.encoder) {
+          g_printerr("encoder could not be created.\n ");
+        }
+        if (!data.filter) {
+          g_printerr("filter could not be created.\n ");
+        }
+        if (!data.appsink) {
+          g_printerr("appsink could not be created.\n ");
+        }
+        if (!data.h264parse) {
+          g_printerr("h264parse could not be created.\n ");
+        }
         return 1;
     }
 
@@ -460,6 +485,8 @@ int gstreamer_init(int argc, char* argv[]) {
             height = res_height[i];
             if (resolution_supported(src_caps, data, width, height, framerate)) {
                 found_resolution = true;
+                LOG_INFO("Found matching resolution: " << width << "px x " << height << "px");
+
                 break;
             }
         }
